@@ -8,7 +8,7 @@ struct naive_priv {
 #define PRIV(x) \
     ((struct naive_priv *) ((x)->priv))
 
-static void assign(Matrix *thiz, Mat4x4 data)
+static void naive_assign(Matrix *thiz, Mat4x4 data)
 {
     /* FIXME: don't hardcode row & col */
     thiz->row = thiz->col = 4;
@@ -21,7 +21,7 @@ static void assign(Matrix *thiz, Mat4x4 data)
 
 static const float epsilon = 1 / 10000.0;
 
-static bool equal(const Matrix *l, const Matrix *r)
+static bool naive_equal(const Matrix *l, const Matrix *r)
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
@@ -31,10 +31,11 @@ static bool equal(const Matrix *l, const Matrix *r)
     return true;
 }
 
-bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
+bool naive_mul(Matrix *dst, const Matrix *l, const Matrix *r)
 {
-    /* FIXME: error hanlding */
-    dst->priv = malloc(4 * 4 * sizeof(float));
+    if(!(dst->priv = malloc(4 * 4 * sizeof(float))))
+        return false;
+
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             for (int k = 0; k < 4; k++)
@@ -44,7 +45,7 @@ bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
 }
 
 MatrixAlgo NaiveMatrixProvider = {
-    .assign = assign,
-    .equal = equal,
-    .mul = mul,
+    .assign = naive_assign,
+    .equal = naive_equal,
+    .mul = naive_mul,
 };
