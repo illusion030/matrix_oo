@@ -1,52 +1,75 @@
 #include "matrix.h"
 #include <stdlib.h>
-#include <string.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
 
 struct sse_priv {
-    int values[4][4];
+    int **values;
 };
 
 #define PRIV(x) \
     ((struct sse_priv *) ((x)->priv))
 
-static void assign(Matrix *thiz, Mat4x4 data)
+static void assign(Matrix *thiz , int row, int col, int **data)
 {
-    /* FIXME: don't hardcode row & col */
-    thiz->row = thiz->col = 4;
+    int i, j;
 
-    thiz->priv = malloc(4 * 4 * sizeof(float));
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            PRIV(thiz)->values[i][j] = data.values[i][j];
+    thiz->row = row;
+    thiz->col = col;
+
+    if (!(thiz->priv = malloc(thiz->row * thiz->col * sizeof(int))))
+        return;
+    if (!(PRIV(thiz)->values = (int **)malloc(row * sizeof(int *))))
+        return;
+    for (i = 0; i < thiz->row; i++)
+        if (!(PRIV(thiz)->values[i] = (int *)malloc(thiz->col * sizeof(int))))
+            return;
+
+    for (i = 0; i < thiz->row; i++)
+        for (j = 0; j < thiz->col; j++)
+            PRIV(thiz)->values[i][j] = data[i][j];
 }
-
-static const float epsilon = 1 / 10000.0;
 
 static bool equal(const Matrix *l, const Matrix *r)
 {
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            if (PRIV(l)->values[i][j] + epsilon < PRIV(r)->values[i][j] ||
-                    PRIV(r)->values[i][j] + epsilon < PRIV(l)->values[i][j])
+    if ((l->row != r->row) || (l->col != r->col))
+        return false;
+
+    for (int i = 0; i < l->row; i++)
+        for (int j = 0; j < l->col; j++)
+            if (PRIV(l)->values[i][j] != PRIV(r)->values[i][j])
                 return false;
+
     return true;
 }
 
 static bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
 {
-    if (!(dst->priv = malloc(4 * 4 * sizeof(int))))
+    int i, j, k;
+
+    if (l->col != r->row)
         return false;
 
-    for (int i = 0; i < 4; i += 4) {
-        for (int j = 0; j < 4; j += 4) {
+    /*allocate for dst*/
+    if (!(dst->priv = malloc(l->row * r->col * sizeof(int))))
+        return false;
+    if (!(PRIV(dst)->values = (int **)malloc(l->row * sizeof(int *))))
+        return false;
+    for (i = 0; i < l->row; i++)
+        if (!(PRIV(dst)->values[i] = (int *)malloc(r->col * sizeof(int))))
+            return false;
+
+    dst->row = l->row;
+    dst->col = r->col;
+
+    for (i = 0; i < l->row; i += 4) {
+        for (j = 0; j < r->col; j += 4) {
             __m128i des0 = _mm_setzero_si128();
             __m128i des1 = _mm_setzero_si128();
             __m128i des2 = _mm_setzero_si128();
             __m128i des3 = _mm_setzero_si128();
 
-            for (int k = 0; k < 4; k += 4) {
+            for (k = 0; k < l->col; k += 4) {
                 __m128i I0 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 0][k]);
                 __m128i I1 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 1][k]);
                 __m128i I2 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 2][k]);
