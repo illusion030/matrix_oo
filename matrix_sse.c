@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include <stdlib.h>
+#include <string.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
 
@@ -10,7 +11,7 @@ struct sse_priv {
 #define PRIV(x) \
     ((struct sse_priv *) ((x)->priv))
 
-static void sse_assign(Matrix *thiz, Mat4x4 data)
+static void assign(Matrix *thiz, Mat4x4 data)
 {
     /* FIXME: don't hardcode row & col */
     thiz->row = thiz->col = 4;
@@ -23,7 +24,7 @@ static void sse_assign(Matrix *thiz, Mat4x4 data)
 
 static const float epsilon = 1 / 10000.0;
 
-static bool sse_equal(const Matrix *l, const Matrix *r)
+static bool equal(const Matrix *l, const Matrix *r)
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
@@ -33,7 +34,7 @@ static bool sse_equal(const Matrix *l, const Matrix *r)
     return true;
 }
 
-bool sse_mul(Matrix *dst, const Matrix *l, const Matrix *r)
+static bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
 {
     if (!(dst->priv = malloc(4 * 4 * sizeof(int))))
         return false;
@@ -162,8 +163,14 @@ bool sse_mul(Matrix *dst, const Matrix *l, const Matrix *r)
     return true;
 }
 
+static char *info(void)
+{
+    return "sse";
+}
+
 MatrixAlgo SseMatrixProvider = {
-    .assign = sse_assign,
-    .equal = sse_equal,
-    .mul = sse_mul,
+    .assign = assign,
+    .equal = equal,
+    .mul = mul,
+    .info = info,
 };

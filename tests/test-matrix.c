@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 MatrixAlgo *matrix_providers[] = {
     &NaiveMatrixProvider,
@@ -10,9 +11,6 @@ int main()
 {
     int i;
     bool not_equal = false;
-    char *impl_name[2];
-    impl_name[0] = "naive";
-    impl_name[1] = "sse";
 
     for (i = 0; i < 2; i++) {
         MatrixAlgo *algo = matrix_providers[i];
@@ -48,11 +46,14 @@ int main()
         });
 
         if (algo->equal(&dst, &fixed))
-            printf("%s result equal!!\n", impl_name[i]);
+            printf("%s result equal!!\n", algo->info());
         else {
-            printf("%s result not equal!!\n", impl_name[i]);
+            printf("%s result not equal!!\n", algo->info());
             not_equal = true;
         }
+        free(m.priv);
+        free(n.priv);
+        free(dst.priv);
     }
     if (not_equal)
         return -1;
