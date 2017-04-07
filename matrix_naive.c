@@ -16,6 +16,7 @@ static void assign(Matrix *thiz, int row, int col, int **data)
     thiz->row = row;
     thiz->col = col;
 
+    /* allocate for thiz */
     if (!(thiz->priv = malloc(thiz->row * thiz->col * sizeof(int))))
         return;
     if (!(PRIV(thiz)->values = (int **)malloc(row * sizeof(int *))))
@@ -48,17 +49,17 @@ static bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
     if (l->col != r->row)
         return false;
 
-    /*allocate for dst*/
-    if (!(dst->priv = malloc(l->row * r->col * sizeof(int))))
-        return false;
-    if (!(PRIV(dst)->values = (int **)malloc(l->row * sizeof(int *))))
-        return false;
-    for (i = 0; i < l->row; i++)
-        if(!(PRIV(dst)->values[i] = (int *)malloc(r->col * sizeof(int))))
-            return false;
-
     dst->row = l->row;
     dst->col = r->col;
+
+    /* allocate for dst */
+    if (!(dst->priv = malloc(dst->row * dst->col * sizeof(int))))
+        return false;
+    if (!(PRIV(dst)->values = (int **)malloc(dst->row * sizeof(int *))))
+        return false;
+    for (i = 0; i < dst->row; i++)
+        if(!(PRIV(dst)->values[i] = (int *)malloc(dst->col * sizeof(int))))
+            return false;
 
     for (i = 0; i < l->row; i++)
         for (j = 0; j < r->col; j++)

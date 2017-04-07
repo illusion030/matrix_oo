@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SRC1_ROWS 40
-#define SRC1_COLS 20
-#define SRC2_ROWS 20
-#define SRC2_COLS 40
+#define SRC1_ROWS 41
+#define SRC1_COLS 21
+#define SRC2_ROWS 21
+#define SRC2_COLS 41
 
 MatrixAlgo *matrix_providers[] = {
     &NaiveMatrixProvider,
@@ -41,7 +41,7 @@ int main()
     bool not_equal = false;
     int **src1, **src2, **mul_ans;
 
-    /*allocate*/
+    /* allocate */
     if (!(src1 = get_space(SRC1_ROWS, SRC1_COLS)))
         return -1;
     if (!(src2 = get_space(SRC2_ROWS, SRC2_COLS)))
@@ -49,11 +49,11 @@ int main()
     if (!(mul_ans = get_space(SRC1_ROWS, SRC2_COLS)))
         return -1;
 
-    /*get rand data*/
+    /* get rand data */
     rand_data(SRC1_ROWS, SRC1_COLS, src1);
     rand_data(SRC2_ROWS, SRC2_COLS, src2);
 
-    /*calculate the answer*/
+    /* evaluate the answer */
     for (i = 0; i < SRC1_ROWS; i ++)
         for (j = 0; j < SRC2_COLS; j++)
             mul_ans[i][j] = 0;
@@ -89,7 +89,6 @@ int main()
             printf("%s result not equal!!\n", algo->info());
             not_equal = true;
         }
-
         free(m.priv);
         free(n.priv);
         free(dst.priv);

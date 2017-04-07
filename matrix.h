@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 
+/* predefined shortcut */
+#define DECLARE_MATRIX(col, row) \
+    typedef struct { float value[col][row]; } Mat ## col ## x ## row
+DECLARE_MATRIX(3, 3);
+DECLARE_MATRIX(4, 4);
+
 typedef struct {
     int row, col;
     void *priv;

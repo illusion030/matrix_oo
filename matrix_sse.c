@@ -14,20 +14,29 @@ static void assign(Matrix *thiz , int row, int col, int **data)
 {
     int i, j;
 
-    thiz->row = row;
-    thiz->col = col;
+    /* extend while not the multiple of 4 */
+    thiz->row = (row % 4 == 0) ? row : row + (4 - row % 4);
+    thiz->col = (col % 4 == 0) ? col : col + (4 - col % 4);
 
+    /* allocate for thiz */
     if (!(thiz->priv = malloc(thiz->row * thiz->col * sizeof(int))))
         return;
-    if (!(PRIV(thiz)->values = (int **)malloc(row * sizeof(int *))))
+    if (!(PRIV(thiz)->values = (int **)malloc(thiz->row * sizeof(int *))))
         return;
     for (i = 0; i < thiz->row; i++)
         if (!(PRIV(thiz)->values[i] = (int *)malloc(thiz->col * sizeof(int))))
             return;
 
-    for (i = 0; i < thiz->row; i++)
-        for (j = 0; j < thiz->col; j++)
-            PRIV(thiz)->values[i][j] = data[i][j];
+    for (i = 0; i < thiz->row; i++) {
+        for (j = 0; j < thiz->col; j++) {
+            if (i >= row || j >= col)
+                PRIV(thiz)->values[i][j] = 0;
+            else
+                PRIV(thiz)->values[i][j] = data[i][j];
+        }
+    }
+    thiz->row = row;
+    thiz->col = col;
 }
 
 static bool equal(const Matrix *l, const Matrix *r)
@@ -45,31 +54,34 @@ static bool equal(const Matrix *l, const Matrix *r)
 
 static bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
 {
-    int i, j, k;
+    int i, j, k, same_line;
 
     if (l->col != r->row)
         return false;
 
-    /*allocate for dst*/
-    if (!(dst->priv = malloc(l->row * r->col * sizeof(int))))
+    /* extend while not the multiple of 4 */
+    dst->row = (l->row % 4 == 0) ? l->row : l->row + (4 - l->row % 4);
+    dst->col = (r->col % 4 == 0) ? r->col : r->col + (4 - r->col % 4);
+    same_line = (l->col % 4 == 0) ? l->col : l->col + (4 - l->col % 4);
+
+    /* allocate for dst */
+    if (!(dst->priv = malloc(dst->row * dst->col * sizeof(int))))
         return false;
-    if (!(PRIV(dst)->values = (int **)malloc(l->row * sizeof(int *))))
+    if (!(PRIV(dst)->values = (int **)malloc(dst->row * sizeof(int *))))
         return false;
-    for (i = 0; i < l->row; i++)
-        if (!(PRIV(dst)->values[i] = (int *)malloc(r->col * sizeof(int))))
+    for (i = 0; i < dst->row; i++)
+        if (!(PRIV(dst)->values[i] = (int *)malloc(dst->col * sizeof(int))))
             return false;
 
-    dst->row = l->row;
-    dst->col = r->col;
-
-    for (i = 0; i < l->row; i += 4) {
-        for (j = 0; j < r->col; j += 4) {
+    /* mult by SSE */
+    for (i = 0; i < dst->row; i += 4) {
+        for (j = 0; j < dst->col; j += 4) {
             __m128i des0 = _mm_setzero_si128();
             __m128i des1 = _mm_setzero_si128();
             __m128i des2 = _mm_setzero_si128();
             __m128i des3 = _mm_setzero_si128();
 
-            for (k = 0; k < l->col; k += 4) {
+            for (k = 0; k < same_line; k += 4) {
                 __m128i I0 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 0][k]);
                 __m128i I1 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 1][k]);
                 __m128i I2 = _mm_load_si128((__m128i *)&PRIV(l)->values[i + 2][k]);
@@ -182,6 +194,8 @@ static bool mul(Matrix *dst, const Matrix *l, const Matrix *r)
             _mm_store_si128((__m128i *)(&PRIV(dst)->values[i + 3][j]), des3);
         }
     }
+    dst->row = l->row;
+    dst->col = r->col;
 
     return true;
 }
